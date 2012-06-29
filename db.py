@@ -13,7 +13,7 @@ def get_username():
     return pwd.getpwuid(os.getuid())[0]
 
 def get_pg_user():
-    return local("ps aux | grep postgresql", True).split("\n")[0].split()[0]
+    return local("ps aux | grep 'postgres -D' | grep -v grep", True).split("\n")[0].split()[0]
 
 @task
 def create(dbalias=DEFAULT_DB_ALIAS):
@@ -52,7 +52,7 @@ def create_user(dbalias=DEFAULT_DB_ALIAS):
     # createuser -e -d -R -S database["USER"]
     cmd = "createuser -e -d -R -S %s" % (settings_dict["USER"])
     if use_sudo_p():
-        cmd = "sudo su %s -c '%s'" % (get_pg_user(), cmd)
+        cmd = """sudo su %s -c "psql -c \\"CREATE USER %s WITH CREATEDB%s;\\"" """ % (get_pg_user(), settings_dict["USER"], (" ENCRYPTED PASSWORD '%s'" % (settings_dict["PASSWORD"])) if len(settings_dict["PASSWORD"]) > 0 else "")
     local(cmd)
 
 @task
