@@ -1,8 +1,19 @@
+import pwd, os
+
 from fabric.api import task, local, abort
 from fabric.contrib.console import confirm
 
 from django.conf import settings
 from django.db.utils import DEFAULT_DB_ALIAS
+
+def use_sudo_p():
+    return get_username() != get_pg_user()
+
+def get_username():
+    return pwd.getpwuid(os.getuid())[0]
+
+def get_pg_user():
+    return local("ps aux | grep postgresql", True).split("\n")[0].split()[0]
 
 @task
 def create(dbalias=DEFAULT_DB_ALIAS):
@@ -12,7 +23,10 @@ def create(dbalias=DEFAULT_DB_ALIAS):
     settings_dict = settings.DATABASES[dbalias]
 
     # createdb -E utf8 -O database["USER"] database["NAME"]
-    local("createdb -e -E utf8 -O %s %s" % (settings_dict["USER"], settings_dict["NAME"]))
+    cmd = "createdb -e -E utf8 -O %s %s" % (settings_dict["USER"], settings_dict["NAME"])
+    if use_sudo_p():
+        cmd = "sudo su %s -c '%s'" % (get_pg_user(), cmd)
+    local(cmd)
 
 @task
 def drop(dbalias=DEFAULT_DB_ALIAS):
@@ -24,7 +38,10 @@ def drop(dbalias=DEFAULT_DB_ALIAS):
     # dropdb -U database["USER"] database["NAME"]
     if not confirm("Are you sure you want to drop the database \"%s\"?" % settings_dict["NAME"], default=False):
         abort("Cancelled.")
-    local("dropdb -e -U %s %s" % (settings_dict["USER"], settings_dict["NAME"]))
+    cmd = "dropdb -e %s" % (settings_dict["NAME"])
+    if use_sudo_p():
+        cmd = "sudo su %s -c '%s'" % (get_pg_user(), cmd)
+    local(cmd)
 
 @task
 def create_user(dbalias=DEFAULT_DB_ALIAS):
@@ -33,7 +50,10 @@ def create_user(dbalias=DEFAULT_DB_ALIAS):
     settings_dict = settings.DATABASES[dbalias]
 
     # createuser -e -d -R -S database["USER"]
-    local("createuser -e -d -R -S %s" % (settings_dict["USER"]))
+    cmd = "createuser -e -d -R -S %s" % (settings_dict["USER"])
+    if use_sudo_p():
+        cmd = "sudo su %s -c '%s'" % (get_pg_user(), cmd)
+    local(cmd)
 
 @task
 def drop_user(dbalias=DEFAULT_DB_ALIAS):
@@ -42,7 +62,10 @@ def drop_user(dbalias=DEFAULT_DB_ALIAS):
     settings_dict = settings.DATABASES[dbalias]
 
     # dropuser -e database["USER"]
-    local("dropuser -e %s" % (settings_dict["USER"]))
+    cmd = "dropuser -e %s" % (settings_dict["USER"])
+    if use_sudo_p():
+        cmd = "sudo su %s -c '%s'" % (get_pg_user(), cmd)
+    local(cmd)
 
 @task
 def init(dbalias=DEFAULT_DB_ALIAS):
