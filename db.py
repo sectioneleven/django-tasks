@@ -1,9 +1,6 @@
 from fabric.api import task, local, abort
 from fabric.contrib.console import confirm
 
-from fabric.contrib import django
-django.project("online_store")
-
 from django.conf import settings
 
 @task
