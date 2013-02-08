@@ -86,5 +86,6 @@ def reset(dbalias=DEFAULT_DB_ALIAS):
     """
     drop(dbalias)
     create(dbalias)
-    local("./manage.py syncdb")
+    local("./manage.py syncdb --noinput")
     local("./manage.py migrate")
+    local("./manage.py loaddata online_store/fixtures/*")
