@@ -1,4 +1,5 @@
-import pwd, os
+import os
+import pwd
 
 from fabric.api import task, local, abort
 from fabric.contrib.console import confirm
@@ -6,14 +7,18 @@ from fabric.contrib.console import confirm
 from django.conf import settings
 from django.db.utils import DEFAULT_DB_ALIAS
 
+
 def use_sudo_p():
     return get_username() != get_pg_user()
+
 
 def get_username():
     return pwd.getpwuid(os.getuid())[0]
 
+
 def get_pg_user():
     return local("ps aux | grep 'postgres -D' | grep -v grep", True).split("\n")[0].split()[0]
+
 
 @task
 def create(dbalias=DEFAULT_DB_ALIAS):
@@ -27,6 +32,7 @@ def create(dbalias=DEFAULT_DB_ALIAS):
     if use_sudo_p():
         cmd = "sudo su %s -c '%s'" % (get_pg_user(), cmd)
     local(cmd)
+
 
 @task
 def drop(dbalias=DEFAULT_DB_ALIAS):
@@ -43,6 +49,7 @@ def drop(dbalias=DEFAULT_DB_ALIAS):
         cmd = "sudo su %s -c '%s'" % (get_pg_user(), cmd)
     local(cmd)
 
+
 @task
 def create_user(dbalias=DEFAULT_DB_ALIAS):
     """Creates the database user.
@@ -54,6 +61,7 @@ def create_user(dbalias=DEFAULT_DB_ALIAS):
     if use_sudo_p():
         cmd = """sudo su %s -c "psql -c \\"CREATE USER %s WITH CREATEDB%s;\\"" """ % (get_pg_user(), settings_dict["USER"], (" ENCRYPTED PASSWORD '%s'" % (settings_dict["PASSWORD"])) if len(settings_dict["PASSWORD"]) > 0 else "")
     local(cmd)
+
 
 @task
 def drop_user(dbalias=DEFAULT_DB_ALIAS):
@@ -67,6 +75,7 @@ def drop_user(dbalias=DEFAULT_DB_ALIAS):
         cmd = "sudo su %s -c '%s'" % (get_pg_user(), cmd)
     local(cmd)
 
+
 @task
 def init(dbalias=DEFAULT_DB_ALIAS):
     """Initialize the database.
@@ -77,6 +86,7 @@ def init(dbalias=DEFAULT_DB_ALIAS):
     create(dbalias)
     local("./manage.py syncdb")
     local("./manage.py migrate")
+
 
 @task
 def reset(dbalias=DEFAULT_DB_ALIAS):
