@@ -5,7 +5,9 @@ from fabric.api import task, local, abort
 from fabric.contrib.console import confirm
 
 from django.conf import settings
-from django.db.utils import DEFAULT_DB_ALIAS
+
+
+DEFAULT_DB_ALIAS = 'default'
 
 
 def use_sudo_p():
